@@ -1,2 +1,2 @@
 # Presymbiotic_transcriptional_landscape
-Source code used to analyse the data and generate graphics for the publication "Beneficial and pathogenic fungal exudates elicit a non-specific general transcriptional response in rice roots".
+Source code used to analyse the data and generate graphics for the publication "Defining the pre-symbiotic landscape of rice roots".
