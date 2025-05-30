@@ -1,7 +1,7 @@
 # Presymbiotic transcriptional landscape
 Source code used to analyse the data and generate graphics for the publication:
 
-### Defining the pre-symbiotic landscape of rice roots
+### Defining the pre-symbiotic transcriptional landscape of rice roots
 
 Gabriel Ferreras Garrucho<sup>1</sup>, Uta Paszkowski<sup>1*</sup><sup>§</sup>, Chai Hao Chiu<sup>1*</sup><sup>§</sup>
 
