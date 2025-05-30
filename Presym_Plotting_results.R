@@ -252,15 +252,12 @@ for(i in 1:length(FC.table.names))
   FC.table<-left_join(FC.table, FC.table.i, by="RAP")
 }
 write_tsv(x = FC.table, file = "gene_count_tables/all_FC_table.tsv")
+
+# Reading the FC matrix already provided
+FC.table<-read_tsv("gene_count_tables/all_FC_table.tsv")
 FC.df<-as.data.frame(FC.table)
 FC.df<-column_to_rownames(FC.table, var = "RAP")
 FC.df<-FC.df[rowSums(is.na(FC.df)) != ncol(FC.df), ]
-write.csv(FC.df, "gene_count_tables/all_FC_table.csv")
-
-# Reading the FC matrix already provided
-
-FC.table<-read_tsv("gene_count_tables/all_FC_table.tsv")
-FC.df<-read.csv("gene_count_tables/all_FC_table.csv", row.names = 1)
 FC_for_plotting<- FC.table %>% gather(comparison, FC, colnames(FC.df))
 FC_for_plotting[is.na(FC_for_plotting)] <- 0
 
@@ -276,15 +273,13 @@ for(i in 1:length(padj.names))
   padj.table<-left_join(padj.table, padj.table.i, by="RAP")
 }
 write_tsv(x = padj.table, file = "gene_count_tables/all_padj_table.tsv")
-padj.df<-as.data.frame(padj.table)
-padj.df<-column_to_rownames(padj.table, var = "RAP")
-padj.df<-padj.df[rowSums(is.na(padj.df)) != ncol(padj.df), ]
-write.csv(padj.df, "gene_count_tables/all_padj_table.csv")
 
 # Reading the FDR matrix already provided and generating significance matrix
 
 padj.table<-read_tsv("gene_count_tables/all_padj_table.tsv")
-padj.df<-read.csv("gene_count_tables/all_padj_table.csv", row.names = 1)
+padj.df<-as.data.frame(padj.table)
+padj.df<-column_to_rownames(padj.table, var = "RAP")
+padj.df<-padj.df[rowSums(is.na(padj.df)) != ncol(padj.df), ]
 padj_for_plotting<- padj.table %>% gather(comparison, padj, colnames(padj.df))
 padj_for_plotting[is.na(padj_for_plotting)] <- 1
 padj.matrix<-as.matrix(padj.df)
@@ -403,7 +398,7 @@ FC.matrix[is.na(FC.matrix)] <- 0
 colnames(FC.matrix)<-c("flg22","Free AMF, 4 wpi (this study)","Free AMF, 6 wpi (Das et al., 2022)")
 col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
                          c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
-pdf(file = "plots/heatmaps/figure_New_1C.pdf", width = 11, height = 2.5)
+pdf(file = "plots/heatmaps/figure_1C.pdf", width = 11, height = 2.5)
 set.seed(123)
 ComplexHeatmap::Heatmap(t(FC.matrix), 
                         name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2), na_col = "grey",
@@ -415,44 +410,6 @@ ComplexHeatmap::Heatmap(t(FC.matrix),
                         
                         cluster_column = T, show_column_dend = T, column_km = 6, cluster_column_slices = T,
 
-                        column_labels = paste(filtered.module$Name), 
-                        column_names_gp = gpar(fontsize = 8), column_title_gp = gpar(fontsize = 1, fontface="bold"),
-                        row_names_side = "left",
-                        row_names_gp = gpar(fontsize = 9), row_title_gp = gpar(fontsize = 0, fontface="bold"),
-                        
-                        heatmap_legend_param = list(title_gp = gpar(fontsize = 9, fontface="bold"),labels_gp = gpar(fontsize = 8),
-                                                    legend_height = unit(2, "cm"),legend_width = unit(1, "cm")),
-                        
-                        cell_fun = function(j, i, x, y, width, height, fill) {
-                          grid.text(significance_matrix[j, i],x = x+unit(0.8, "mm"), y = y,
-                                    just = "center", rot = 90, gp = gpar(fontsize = 8.5, col = "red"))}
-)
-dev.off()
-
-# Figure 3A
-
-filtered.module<-filter(AMfaves, RAP %in% row.names(FC.df))
-significance_matrix<-padj_sign_matrix[filtered.module$RAP,
-                                      c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A13_vs_A01","A12_vs_A01")]
-FC.matrix<-as.matrix(FC.df[filtered.module$RAP,
-                           c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A13_vs_A01","A12_vs_A01")])
-
-FC.matrix[is.na(FC.matrix)] <- 0
-colnames(FC.matrix)<-c("Ri naïve GSE","Ri primed GSE","Mo naïve GSE","Mo primed GSE","Plant exudates","Encased AMF","flg22","Free AMF")
-col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
-                         c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
-pdf(file = "plots/heatmaps/figure_New_3A.pdf", width = 11, height = 3.2)
-set.seed(1)
-ComplexHeatmap::Heatmap(t(FC.matrix), 
-                        name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2), na_col = "grey",
-                        
-                        col=col_heatmap, 
-                        
-                        cluster_row = F, show_row_dend = FALSE, row_km = 0, cluster_row_slices = F,
-                        row_split = c(rep("A",6),"B","C"),
-                        
-                        cluster_column = T, show_column_dend = T, column_km = 5, cluster_column_slices = T,
-                        
                         column_labels = paste(filtered.module$Name), 
                         column_names_gp = gpar(fontsize = 8), column_title_gp = gpar(fontsize = 1, fontface="bold"),
                         row_names_side = "left",
@@ -481,8 +438,8 @@ FC.matrix[is.na(FC.matrix)] <- 0
 colnames(FC.matrix)<-c("Plant exudates","Ri naïve GSE","Ri primed GSE","Mo naïve GSE","Mo primed GSE","Encased AMF","Free AMF","flg22")
 col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
                          c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
-png(file = "plots/heatmaps/figure_New_2D.png", width = 10, height = 2, res = 600, units = "in")
-pdf(file = "plots/heatmaps/figure_New_2D.pdf", width = 10, height = 2)
+png(file = "plots/heatmaps/figure_2D.png", width = 10, height = 2, res = 600, units = "in")
+pdf(file = "plots/heatmaps/figure_2D.pdf", width = 10, height = 2)
 set.seed(123)
 ComplexHeatmap::Heatmap(t(FC.matrix), 
                         name="log2(FC)",
@@ -504,6 +461,158 @@ ComplexHeatmap::Heatmap(t(FC.matrix),
 )
 dev.off()
 
+# Figure 3A
+
+filtered.module<-filter(AMfaves, RAP %in% row.names(FC.df))
+significance_matrix<-padj_sign_matrix[filtered.module$RAP,
+                                      c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A13_vs_A01","A12_vs_A01")]
+FC.matrix<-as.matrix(FC.df[filtered.module$RAP,
+                           c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A13_vs_A01","A12_vs_A01")])
+
+FC.matrix[is.na(FC.matrix)] <- 0
+colnames(FC.matrix)<-c("Ri naïve GSE","Ri primed GSE","Mo naïve GSE","Mo primed GSE","Plant exudates","Encased AMF","flg22","Free AMF")
+col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
+                         c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
+pdf(file = "plots/heatmaps/figure_3A.pdf", width = 11, height = 3.2)
+set.seed(1)
+ComplexHeatmap::Heatmap(t(FC.matrix), 
+                        name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2), na_col = "grey",
+                        
+                        col=col_heatmap, 
+                        
+                        cluster_row = F, show_row_dend = FALSE, row_km = 0, cluster_row_slices = F,
+                        row_split = c(rep("A",6),"B","C"),
+                        
+                        cluster_column = T, show_column_dend = T, column_km = 5, cluster_column_slices = T,
+                        
+                        column_labels = paste(filtered.module$Name), 
+                        column_names_gp = gpar(fontsize = 8), column_title_gp = gpar(fontsize = 1, fontface="bold"),
+                        row_names_side = "left",
+                        row_names_gp = gpar(fontsize = 9), row_title_gp = gpar(fontsize = 0, fontface="bold"),
+                        
+                        heatmap_legend_param = list(title_gp = gpar(fontsize = 9, fontface="bold"),labels_gp = gpar(fontsize = 8),
+                                                    legend_height = unit(2, "cm"),legend_width = unit(1, "cm")),
+                        
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                          grid.text(significance_matrix[j, i],x = x+unit(0.8, "mm"), y = y,
+                                    just = "center", rot = 90, gp = gpar(fontsize = 8.5, col = "red"))}
+)
+dev.off()
+
+# Figure 4D
+scaled_counts<-scale(t(as.matrix(vsd_counts_averages[c(DEG.list$activated_genes_table_A11_vs_A01, 
+                                                       DEG.list$activated_genes_table_A12_vs_A01),
+                                                     c("A01","A13","A11","A12",
+                                                       "B01","I01","C01","J01","F01","G01","H01",
+                                                       "B11","I11","C11","J11","F11","G11","H11",
+                                                       "B12","I12","C12","J12","F12","G12","H12")])), center=TRUE, scale=TRUE)
+
+png(file = "plots/heatmaps/figure_3D.png", width = 7, height = 3.5, res = 600, units = "in")
+pdf(file = "plots/heatmaps/figure_3D.pdf", width = 7, height = 3.5)
+set.seed(123)
+ComplexHeatmap::Heatmap(scaled_counts, use_raster = F, name="Z-score",
+                        col=colorRamp2(c(-2,0,2), c("blue", "black", "yellow")),
+                        cluster_columns = T, cluster_rows = F, column_km =3,
+                        row_split = c("A", "A","A","A", rep("B",7), rep("C",7),rep("D",7)),
+                        show_column_dend = FALSE, show_row_dend = FALSE, show_column_names = F,
+                        column_names_gp = gpar(fontsize = 8),
+                        row_names_gp = gpar(fontsize = 8),
+                        column_title_gp = gpar(fontsize = 0.1),
+                        row_title_gp = gpar(fontsize = 0.1))
+dev.off()
+
+# Figure 4E
+filtered.module<-filter(AMfaves, RAP %in% row.names(FC.df))
+significance_matrix<-padj_sign_matrix[filtered.module$RAP,
+                                      c("A11_vs_A01","B11_vs_B01","I11_vs_I01","C11_vs_C01","J11_vs_J01","F11_vs_F01","G11_vs_G01","H11_vs_H01",
+                                        "A12_vs_A01","B12_vs_B01","I12_vs_I01","C12_vs_C01","J12_vs_J01","F12_vs_F01","G12_vs_G01","H12_vs_H01",
+                                        "A13_vs_A01")]
+FC.matrix<-as.matrix(FC.df[filtered.module$RAP,
+                           c("A11_vs_A01","B11_vs_B01","I11_vs_I01","C11_vs_C01","J11_vs_J01","F11_vs_F01","G11_vs_G01","H11_vs_H01",
+                             "A12_vs_A01","B12_vs_B01","I12_vs_I01","C12_vs_C01","J12_vs_J01","F12_vs_F01","G12_vs_G01","H12_vs_H01",
+                             "A13_vs_A01")])
+FC.matrix[is.na(FC.matrix)] <- 0
+colnames(FC.matrix)<-c("WT, Encased AMF","d14l, Encased AMF","cerk1, Encased AMF","cerk1/2, Encased AMF","nfr5, Encased AMF",
+                       "pollux, Encased AMF","ccamk, Encased AMF","cyclops, Encased AMF",
+                       "WT, Free AMF","d14l, Free AMF","cerk1, Free AMF","cerk1/2, Free AMF","nfr5, Free AMF",
+                       "pollux, Free AMF","ccamk, Free AMF","cyclops, Free AMF",
+                       "WT, flg22")
+col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
+                         c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
+pdf(file = "plots/heatmaps/figure_3E.pdf", width = 11, height = 4.6)
+set.seed(123)
+ComplexHeatmap::Heatmap(t(FC.matrix), 
+                        name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2), na_col = "grey",
+                        
+                        col=col_heatmap, 
+                        
+                        cluster_row = F, show_row_dend = FALSE, row_km = 0, cluster_row_slices = F,
+                        row_split = c(rep("Encased AMF",8),rep("Free AMF",8),"Z"),
+                        
+                        cluster_column = T, show_column_dend = T, column_km = 5, cluster_column_slices = T,
+                        
+                        column_labels = paste(filtered.module$Name), 
+                        column_names_gp = gpar(fontsize = 8), column_title_gp = gpar(fontsize = 1, fontface="bold"),
+                        
+                        row_labels = c("WT","d14l","cerk1","cerk1/2","nfr5",
+                                       "pollux","ccamk","cyclops",
+                                       "WT","d14l","cerk1","cerk1/2","nfr5",
+                                       "pollux","ccamk","cyclops",
+                                       "WT, flg22"),
+                        row_names_side = "left",
+                        row_names_gp = gpar(fontsize = 9, fontface="italic"), row_title_gp = gpar(fontsize = 9),
+                        
+                        heatmap_legend_param = list(title_gp = gpar(fontsize = 9, fontface="bold"),labels_gp = gpar(fontsize = 8),
+                                                    legend_height = unit(2, "cm"),legend_width = unit(1, "cm")),
+                        
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                          grid.text(significance_matrix[j, i],x = x+unit(0.8, "mm"), y = y,
+                                    just = "center", rot = 90, gp = gpar(fontsize = 8.5, col = "red"))}
+)
+dev.off()
+
+# Figure S2B
+filtered.module<-filter(AMfaves, RAP %in% row.names(FC.df))
+significance_matrix<-padj_sign_matrix[filtered.module$RAP,
+                                      c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A12_vs_A01","A13_vs_A01")]
+FC.matrix<-as.matrix(FC.df[filtered.module$RAP,
+                           c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A12_vs_A01","A13_vs_A01")])
+fc.das <- setNames(Das2022_WT_Myc_LP_vs_WT_Mock_LP$LFC, Das2022_WT_Myc_LP_vs_WT_Mock_LP$RAP)[rownames(FC.matrix)]
+FC.matrix <- cbind(FC.matrix, WT_Myc_LP_vs_WT_Mock_LP = fc.das)
+padj.das <- setNames(Das2022_WT_Myc_LP_vs_WT_Mock_LP$FDR, Das2022_WT_Myc_LP_vs_WT_Mock_LP$RAP)[rownames(FC.matrix)]
+padj_sign.das <- ifelse(
+  !is.na(padj.das) & padj.das <= 0.001, "***",
+  ifelse(
+    !is.na(padj.das) & padj.das <= 0.01, "**",
+    ifelse(
+      !is.na(padj.das) & padj.das <= 0.05, "*", ""
+    )
+  )
+)
+significance_matrix <- cbind(significance_matrix, WT_Myc_LP_vs_WT_Mock_LP = padj_sign.das)
+FC.matrix[is.na(FC.matrix)] <- 0
+colnames(FC.matrix)<-c("Ri naïve GSE","Ri primed GSE","Mo naïve GSE","Mo primed GSE","Plant exudates","Encased AMF","Free AMF","flg22","Free AMF (Das et al. 2022)")
+col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
+                         c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
+pdf(file = "plots/heatmaps/figure_S2B.pdf", width = 5, height = 11)
+set.seed(123)
+ComplexHeatmap::Heatmap(FC.matrix, 
+                        name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2),
+                        col=col_heatmap, cluster_columns = F, row_km = 6,
+                        cluster_rows = T, show_column_dend = FALSE, show_row_dend = T, 
+                        row_labels = paste(filtered.module$RAP,"  ",filtered.module$Name),
+                        column_split = c(rep("Exudates",6),"Free AMF","flg22","Free AMF (Das et al. 2022)"),
+                        column_names_gp = gpar(fontsize = 9),
+                        na_col = "grey",
+                        row_names_gp = gpar(fontsize = 8),
+                        row_title_gp = gpar(fontsize = 1, fontface="bold"),
+                        column_title_gp = gpar(fontsize = 0.1, fontface="bold"),
+                        heatmap_legend_param = list(title_gp = gpar(fontsize = 9, fontface="bold"),labels_gp = gpar(fontsize = 8),
+                                                    legend_height = unit(2, "cm"),legend_width = unit(1, "cm")),
+                        cell_fun = function(j, i, x, y, width, height, fill) {
+                          grid.text(significance_matrix[i, j],x = x,y = y - unit(0.6, "mm"),just = "center",gp = gpar(fontsize = 10, col = "red"))}
+)
+dev.off()
 
 # Figure S3B
 filtered.module<-filter(Yang2021.degs_flg22_overlap_up, RAP %in% row.names(FC.df), Name != "NA")
@@ -567,100 +676,6 @@ ComplexHeatmap::Heatmap(FC.matrix,
                         column_title_gp = gpar(fontsize = 0.1, fontface="bold"))
 dev.off()
 
-# Figure S2B
-filtered.module<-filter(AMfaves, RAP %in% row.names(FC.df))
-significance_matrix<-padj_sign_matrix[filtered.module$RAP,
-                                      c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A12_vs_A01","A13_vs_A01")]
-FC.matrix<-as.matrix(FC.df[filtered.module$RAP,
-                           c("A07_vs_A01","A08_vs_A01","A09_vs_A01","A10_vs_A01","A06_vs_A01","A11_vs_A01","A12_vs_A01","A13_vs_A01")])
-fc.das <- setNames(Das2022_WT_Myc_LP_vs_WT_Mock_LP$LFC, Das2022_WT_Myc_LP_vs_WT_Mock_LP$RAP)[rownames(FC.matrix)]
-FC.matrix <- cbind(FC.matrix, WT_Myc_LP_vs_WT_Mock_LP = fc.das)
-padj.das <- setNames(Das2022_WT_Myc_LP_vs_WT_Mock_LP$FDR, Das2022_WT_Myc_LP_vs_WT_Mock_LP$RAP)[rownames(FC.matrix)]
-padj_sign.das <- ifelse(
-  !is.na(padj.das) & padj.das <= 0.001, "***",
-  ifelse(
-    !is.na(padj.das) & padj.das <= 0.01, "**",
-    ifelse(
-      !is.na(padj.das) & padj.das <= 0.05, "*", ""
-    )
-  )
-)
-significance_matrix <- cbind(significance_matrix, WT_Myc_LP_vs_WT_Mock_LP = padj_sign.das)
-FC.matrix[is.na(FC.matrix)] <- 0
-colnames(FC.matrix)<-c("Ri naïve GSE","Ri primed GSE","Mo naïve GSE","Mo primed GSE","Plant exudates","Encased AMF","Free AMF","flg22","Free AMF (Das et al. 2022)")
-col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
-                         c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
-pdf(file = "plots/heatmaps/figure_S2B.pdf", width = 5, height = 11)
-set.seed(123)
-ComplexHeatmap::Heatmap(FC.matrix, 
-                        name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2),
-                        col=col_heatmap, cluster_columns = F, row_km = 6,
-                        cluster_rows = T, show_column_dend = FALSE, show_row_dend = T, 
-                        row_labels = paste(filtered.module$RAP,"  ",filtered.module$Name),
-                        column_split = c(rep("Exudates",6),"Free AMF","flg22","Free AMF (Das et al. 2022)"),
-                        column_names_gp = gpar(fontsize = 9),
-                        na_col = "grey",
-                        row_names_gp = gpar(fontsize = 8),
-                        row_title_gp = gpar(fontsize = 1, fontface="bold"),
-                        column_title_gp = gpar(fontsize = 0.1, fontface="bold"),
-                        heatmap_legend_param = list(title_gp = gpar(fontsize = 9, fontface="bold"),labels_gp = gpar(fontsize = 8),
-                          legend_height = unit(2, "cm"),legend_width = unit(1, "cm")),
-                        cell_fun = function(j, i, x, y, width, height, fill) {
-                          grid.text(significance_matrix[i, j],x = x,y = y - unit(0.6, "mm"),just = "center",gp = gpar(fontsize = 10, col = "red"))}
-)
-dev.off()
-
-# Figure 3E
-filtered.module<-filter(AMfaves, RAP %in% row.names(FC.df))
-significance_matrix<-padj_sign_matrix[filtered.module$RAP,
-                                      c("A11_vs_A01","B11_vs_B01","I11_vs_I01","C11_vs_C01","J11_vs_J01","F11_vs_F01","G11_vs_G01","H11_vs_H01",
-                                        "A12_vs_A01","B12_vs_B01","I12_vs_I01","C12_vs_C01","J12_vs_J01","F12_vs_F01","G12_vs_G01","H12_vs_H01",
-                                        "A13_vs_A01")]
-FC.matrix<-as.matrix(FC.df[filtered.module$RAP,
-                           c("A11_vs_A01","B11_vs_B01","I11_vs_I01","C11_vs_C01","J11_vs_J01","F11_vs_F01","G11_vs_G01","H11_vs_H01",
-                             "A12_vs_A01","B12_vs_B01","I12_vs_I01","C12_vs_C01","J12_vs_J01","F12_vs_F01","G12_vs_G01","H12_vs_H01",
-                             "A13_vs_A01")])
-FC.matrix[is.na(FC.matrix)] <- 0
-colnames(FC.matrix)<-c("WT, Encased AMF","d14l, Encased AMF","cerk1, Encased AMF","cerk1/2, Encased AMF","nfr5, Encased AMF",
-                       "pollux, Encased AMF","ccamk, Encased AMF","cyclops, Encased AMF",
-                       "WT, Free AMF","d14l, Free AMF","cerk1, Free AMF","cerk1/2, Free AMF","nfr5, Free AMF",
-                       "pollux, Free AMF","ccamk, Free AMF","cyclops, Free AMF",
-                       "WT, flg22")
-col_heatmap = colorRamp2(c(floor(min(c(FC.matrix))),-2,-1,0,1,2,ceiling(max(FC.matrix))), 
-                         c('#B6B6FF',"#0000FF",'#000048',"black",'#484800',"#FFFF00",'#FFFFB6'))
-pdf(file = "plots/heatmaps/figure_new_3E.pdf", width = 11, height = 4.6)
-set.seed(123)
-ComplexHeatmap::Heatmap(t(FC.matrix), 
-                        name="log2(FC)", rect_gp = gpar(col = "white", lwd = 0.2), na_col = "grey",
-                        
-                        col=col_heatmap, 
-                        
-                        cluster_row = F, show_row_dend = FALSE, row_km = 0, cluster_row_slices = F,
-                        row_split = c(rep("Encased AMF",8),rep("Free AMF",8),"Z"),
-                        
-                        cluster_column = T, show_column_dend = T, column_km = 5, cluster_column_slices = T,
-                        
-                        column_labels = paste(filtered.module$Name), 
-                        column_names_gp = gpar(fontsize = 8), column_title_gp = gpar(fontsize = 1, fontface="bold"),
-                        
-                        row_labels = c("WT","d14l","cerk1","cerk1/2","nfr5",
-                                       "pollux","ccamk","cyclops",
-                                       "WT","d14l","cerk1","cerk1/2","nfr5",
-                                       "pollux","ccamk","cyclops",
-                                       "WT, flg22"),
-                        row_names_side = "left",
-                        row_names_gp = gpar(fontsize = 9, fontface="italic"), row_title_gp = gpar(fontsize = 9),
-                        
-                        heatmap_legend_param = list(title_gp = gpar(fontsize = 9, fontface="bold"),labels_gp = gpar(fontsize = 8),
-                                                    legend_height = unit(2, "cm"),legend_width = unit(1, "cm")),
-                        
-                        cell_fun = function(j, i, x, y, width, height, fill) {
-                          grid.text(significance_matrix[j, i],x = x+unit(0.8, "mm"), y = y,
-                                    just = "center", rot = 90, gp = gpar(fontsize = 8.5, col = "red"))}
-)
-dev.off()
-
-
 # Figure S7
 filtered.module<-filter(Yang2021.degs_flg22_overlap_up, RAP %in% row.names(FC.df), Name != "NA")
 significance_matrix<-padj_sign_matrix[filtered.module$RAP,
@@ -698,30 +713,6 @@ ComplexHeatmap::Heatmap(FC.matrix,
                           grid.text(significance_matrix[i, j],x = x,y = y - unit(0.6, "mm"),just = "center",gp = gpar(fontsize = 10, col = "red"))}
                         )
 dev.off()
-
-
-# Figure 4D
-scaled_counts<-scale(t(as.matrix(vsd_counts_averages[c(DEG.list$activated_genes_table_A11_vs_A01, 
-                                                       DEG.list$activated_genes_table_A12_vs_A01),
-                                                     c("A01","A13","A11","A12",
-                                                       "B01","I01","C01","J01","F01","G01","H01",
-                                                       "B11","I11","C11","J11","F11","G11","H11",
-                                                       "B12","I12","C12","J12","F12","G12","H12")])), center=TRUE, scale=TRUE)
-
-png(file = "plots/heatmaps/figure_3D.png", width = 7, height = 3.5, res = 600, units = "in")
-pdf(file = "plots/heatmaps/figure_3D.pdf", width = 7, height = 3.5)
-set.seed(123)
-ComplexHeatmap::Heatmap(scaled_counts, use_raster = F, name="Z-score",
-                        col=colorRamp2(c(-2,0,2), c("blue", "black", "yellow")),
-                        cluster_columns = T, cluster_rows = F, column_km =3,
-                        row_split = c("A", "A","A","A", rep("B",7), rep("C",7),rep("D",7)),
-                        show_column_dend = FALSE, show_row_dend = FALSE, show_column_names = F,
-                        column_names_gp = gpar(fontsize = 8),
-                        row_names_gp = gpar(fontsize = 8),
-                        column_title_gp = gpar(fontsize = 0.1),
-                        row_title_gp = gpar(fontsize = 0.1))
-dev.off()
-
 
 # Average expression plot ------------------------------------------------------
 # Figure 3C
@@ -781,7 +772,7 @@ ggplot(vsd_counts_for_plot, aes(x = treatment_name, y = value)) +
         axis.title.x = element_text(face = "bold", color = "black", size = 10),
         plot.title = element_text(face = "bold", color = "black", hjust = 0.5))
 
-ggsave(filename = paste("plots/Average_expression_plots/figure_2F.pdf", sep = ""), width = 3, height = 4)
+ggsave(filename = paste("plots/Average_expression_plots/figure_3C.pdf", sep = ""), width = 3, height = 4)
 
 # Figure S8A
 vsd_counts_for_plot<-filter(vsd_counts_for_plotting, RAP %in% GSRgenes.rice$RAP)
@@ -853,6 +844,7 @@ result_tibble <- tibble(RAP = unique(unlist(venn.list)))
 for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
 result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
 view(filter(result_tibble,  ! is.na(AM_gene_description)))
+write_tsv(result_tibble, "plots/Venn/figure_1A.tsv")
 
 # Figure 1B
 colors.venn<-c("magenta", "skyblue", "palegreen")
@@ -866,6 +858,12 @@ ggvenn(venn.list,
        text_size = 6, show_percentage = F,
        set_name_size = 5)+scale_x_continuous(expand = expansion(mult = .2))
 ggsave("plots/Venn/figure_1B.pdf", height=4, width=4)
+
+result_tibble <- tibble(RAP = unique(unlist(venn.list)))
+for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
+result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
+view(filter(result_tibble,  ! is.na(AM_gene_description)))
+write_tsv(result_tibble, "plots/Venn/figure_1B.tsv")
 
 # Figure 2A
 colors.venn<-c("palegreen", "seagreen3", "dodgerblue")
@@ -882,6 +880,11 @@ plot(venn_fit,
      quantities = TRUE, main = NULL, legend = T)
 dev.off()
 
+result_tibble <- tibble(RAP = unique(unlist(venn.list)))
+for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
+result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
+write_tsv(result_tibble, "plots/Venn/figure_2A.tsv")
+
 # Figure 2B
 colors.venn<-c("palegreen", "seagreen3", "magenta")
 venn.list<-list("Ri naïve GSE"=c(DEG.list$repressed_genes_table_A07_vs_A01,DEG.list$activated_genes_table_A07_vs_A01),
@@ -897,6 +900,11 @@ plot(venn_fit,
      quantities = TRUE, main = NULL, legend = T)
 dev.off()
 
+result_tibble <- tibble(RAP = unique(unlist(venn.list)))
+for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
+result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
+write_tsv(result_tibble, "plots/Venn/figure_2B.tsv")
+
 # Figure 2E
 colors.venn<-c("goldenrod1", "palegreen", "seagreen3", "dodgerblue")
 venn.list<-list("Encased AMF"=c(DEG.list$repressed_genes_table_A11_vs_A01,DEG.list$activated_genes_table_A11_vs_A01),
@@ -911,6 +919,11 @@ ggvenn(venn.list,
        set_name_size = 5)+scale_x_continuous(expand = expansion(mult = .2))
 ggsave("plots/Venn/figure_2E.pdf", height=5, width=5)
 
+result_tibble <- tibble(RAP = unique(unlist(venn.list)))
+for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
+result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
+write_tsv(result_tibble, "plots/Venn/figure_2E.tsv")
+
 # Figure S3A
 colors.venn<-c("magenta","darkorchid1", "yellow", "goldenrod1")
 venn.list<-list("flg22, 6h, roots (this study)"=c(DEG.list$activated_genes_table_A13_vs_A01),
@@ -924,6 +937,11 @@ ggvenn(venn.list,
        text_size = 6, show_percentage = F,
        set_name_size = 5)+scale_x_continuous(expand = expansion(mult = .2))
 ggsave("plots/Venn/figure_S3A.pdf", height=5, width=5)
+
+result_tibble <- tibble(RAP = unique(unlist(venn.list)))
+for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
+result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
+write_tsv(result_tibble, "plots/Venn/figure_S3A.tsv")
 
 # Figure S3D
 colors.venn<-c("magenta", "dodgerblue", "skyblue")
@@ -943,6 +961,7 @@ result_tibble <- tibble(RAP = unique(unlist(venn.list)))
 for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
 result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
 view(filter(result_tibble,  ! is.na(AM_gene_description)))
+write_tsv(result_tibble, "plots/Venn/figure_S3D.tsv")
 
 # Figure S5A
 colors.venn<-c("dodgerblue", "green", "goldenrod1")
@@ -956,7 +975,12 @@ ggvenn(venn.list,
        set_name_color = colors.venn, 
        text_size = 6, show_percentage = F,
        set_name_size = 5)+scale_x_continuous(expand = expansion(mult = .2))
-ggsave("plots/Venn/figure_S4B.pdf", height=4, width=4)
+ggsave("plots/Venn/figure_S5A.pdf", height=4, width=4)
+
+result_tibble <- tibble(RAP = unique(unlist(venn.list)))
+for (set_name in names(venn.list)) {result_tibble[[set_name]] <- ifelse(result_tibble$RAP %in% venn.list[[set_name]], 1, 0)}
+result_tibble<-result_tibble %>% left_join(dplyr::select(rice_annotation, RAP, MSU, Name, AM_gene_description), by = "RAP")
+write_tsv(result_tibble, "plots/Venn/figure_S5A.tsv")
 
 # DEG number plot --------------------------------------------------------------
 DEG.length.table<-tibble("name"=names(DEG.list), "length"=as.integer(summary(DEG.list)[,1]))
@@ -1029,7 +1053,7 @@ ggplot(DEG.length.table.1, aes(x=comparison, y=length.adjusted, fill=up.or.down)
                                      "Ri naïve GSE", "Ri primed GSE","Mo naïve GSE", "Mo primed GSE","Ri primed GSE", "Mo primed GSE"))+
   scale_y_continuous(name="Number of DEGs", breaks = c(-3000,-2000,-1000,0,1000,2000,3000), limits=c(-3000,3000))+ 
   geom_hline(yintercept=0, color = "black", linewidth=0.4)
-ggsave("plots/DEG_number/figure_new1C.pdf", height=3.5, width=5)
+ggsave("plots/DEG_number/figure_1C.pdf", height=3.5, width=5)
 
 
 # Figure S6
@@ -1138,7 +1162,7 @@ ggplot(DEG.length.table.1, aes(x=comparison, y=length.adjusted, fill=up.or.down)
   scale_y_continuous(name="Number of DEGs", breaks = c(-3000,-2000,-1000,0,1000,2000), limits=c(-3000,2500))+ 
   geom_hline(yintercept=0, color = "black", linewidth=0.4)
 
-ggsave("plots/DEG_number/figure_S5.pdf", height=3.5, width=9)
+ggsave("plots/DEG_number/figure_S6.pdf", height=3.5, width=9)
 
 # Normalised gene count plots --------------------------------------------------
 # Figure S9B
@@ -1233,7 +1257,7 @@ ggplot(scatter_data_gse, aes(x=Log2FC_WT.M_vs_WT.G, y=FC))+
     x = "Ri naïve GSE vs H2O (Gutjahr et al., 2015)",
     y = "Ri naïve GSE vs H2O (this study)"
   )
-ggsave("plots/Scatterplots/figure_S4D_1.pdf", width = 3.5, height = 2.5)
+ggsave("plots/Scatterplots/figure_S5D_1.pdf", width = 3.5, height = 2.5)
 
 scatter_data_gse<-left_join(Gutjahr2015_gse_deg, filter(FC_for_plotting, comparison == "A09_vs_A01", RAP %in% Gutjahr2015_gse_deg$RAP), by="RAP")
 ggplot(scatter_data_gse, aes(x=Log2FC_WT.M_vs_WT.G, y=FC))+
@@ -1248,7 +1272,7 @@ ggplot(scatter_data_gse, aes(x=Log2FC_WT.M_vs_WT.G, y=FC))+
     y = "Mo naïve GSE vs H2O (this study)"
   )
 
-ggsave("plots/Scatterplots/figure_S4D_2.pdf", width = 3.5, height = 2.5)
+ggsave("plots/Scatterplots/figure_S5D_2.pdf", width = 3.5, height = 2.5)
 
 
 
@@ -1363,6 +1387,53 @@ names(GO.table.list)<-GO.table.names
 GO.table.complete <- bind_rows(GO.table.list, .id = "comparison")
 
 # Generating figures
+# Figure 3B
+GO.table<-filter(GO.table.complete, 
+                 ID %in% filter(rice_TERM2NAME, Ontology == "BP")$GO.term,
+                 comparison %in% c("activated_genes_table_A11_vs_A01_GO_table",
+                                   "GSRgenes.rice_GO_table",
+                                   "activated_genes_table_A13_vs_A01_GO_table",
+                                   "activated_genes_table_A12_vs_A01_GO_table"),
+                 pvalue <= 0.05)
+
+GeneRatios<-c()
+for(i in 1:length(GO.table$GeneRatio))
+{
+  GeneRatios[i]<-eval(parse(text = GO.table$GeneRatio[i]))
+}
+GO.table$GeneRatio<-GeneRatios
+
+GO.table.selection<-rbind(
+  filter(GO.table, comparison == "activated_genes_table_A12_vs_A01_GO_table")[1:5,],
+  filter(GO.table, comparison == "activated_genes_table_A11_vs_A01_GO_table")[1:5,],
+  filter(GO.table, comparison == "GSRgenes.rice_GO_table")[1:5,],
+  filter(GO.table, comparison == "activated_genes_table_A13_vs_A01_GO_table")[1:5,]
+)
+GO.table.filtered<-filter(GO.table, ID %in% unique(GO.table.selection$ID))
+idx<-order(GO.table.filtered$GeneRatio, decreasing = T)
+GO.table<-filter(GO.table.filtered[idx,], ID %in% filter(rice_TERM2NAME, Ontology == "BP")$GO.term)
+GO.table.filtered$Description<-factor(GO.table.filtered$Description, levels=unique(GO.table.selection$Description))
+GO.table.filtered$comparison<-factor(GO.table.filtered$comparison, levels=c("activated_genes_table_A11_vs_A01_GO_table",
+                                                                            "GSRgenes.rice_GO_table",
+                                                                            "activated_genes_table_A13_vs_A01_GO_table",
+                                                                            "activated_genes_table_A12_vs_A01_GO_table"))
+
+
+ggplot(GO.table.filtered, aes(x=GeneRatio, y=Description, size=Count, color=p.adjust)) +
+  geom_point() +
+  geom_point(shape = 1, colour = "black") +
+  scale_color_gradientn(colours=c("yellow","blue","midnightblue"),values=c(0,0.5,1), name = "FDR") +
+  ylab("GO terms") + 
+  xlab("Gene Ratio") + 
+  publication_theme_GO() +
+  scale_size(name="Count", range=c(1,10), breaks=c(10,50,100,250)) +
+  facet_wrap(vars(comparison), nrow = 1, ncol=8, labeller = as_labeller(c("activated_genes_table_A11_vs_A01_GO_table"="Encased AMF",
+                                                                          "GSRgenes.rice_GO_table"="GSR genes",
+                                                                          "activated_genes_table_A12_vs_A01_GO_table"="Free AMF",
+                                                                          "activated_genes_table_A13_vs_A01_GO_table"="flg22"
+  )))
+ggsave("plots/GO/GO_plots/figure_3B.pdf", height=3.7, width=8.5)
+
 # Figure S2A
 GO.table<-filter(GO.table.complete, 
                  ID %in% filter(rice_TERM2NAME, Ontology == "BP")$GO.term,
@@ -1494,54 +1565,7 @@ ggplot(GO.table.filtered, aes(x=GeneRatio, y=Description, size=Count, color=p.ad
                                                                           "activated_genes_table_A11_vs_A01_GO_table"="Encased AMF",
                                                                           "activated_genes_table_A12_vs_A01_GO_table"="Free AMF",
                                                                           "activated_genes_table_A13_vs_A01_GO_table"="flg22")))
-ggsave("plots/GO/GO_plots/figure_3B.pdf", height=7, width=10)
-
-# Figure 3B
-GO.table<-filter(GO.table.complete, 
-                 ID %in% filter(rice_TERM2NAME, Ontology == "BP")$GO.term,
-                 comparison %in% c("activated_genes_table_A11_vs_A01_GO_table",
-                                   "GSRgenes.rice_GO_table",
-                                   "activated_genes_table_A13_vs_A01_GO_table",
-                                   "activated_genes_table_A12_vs_A01_GO_table"),
-                 pvalue <= 0.05)
-
-GeneRatios<-c()
-for(i in 1:length(GO.table$GeneRatio))
-{
-  GeneRatios[i]<-eval(parse(text = GO.table$GeneRatio[i]))
-}
-GO.table$GeneRatio<-GeneRatios
-
-GO.table.selection<-rbind(
-  filter(GO.table, comparison == "activated_genes_table_A12_vs_A01_GO_table")[1:5,],
-  filter(GO.table, comparison == "activated_genes_table_A11_vs_A01_GO_table")[1:5,],
-  filter(GO.table, comparison == "GSRgenes.rice_GO_table")[1:5,],
-  filter(GO.table, comparison == "activated_genes_table_A13_vs_A01_GO_table")[1:5,]
-  )
-GO.table.filtered<-filter(GO.table, ID %in% unique(GO.table.selection$ID))
-idx<-order(GO.table.filtered$GeneRatio, decreasing = T)
-GO.table<-filter(GO.table.filtered[idx,], ID %in% filter(rice_TERM2NAME, Ontology == "BP")$GO.term)
-GO.table.filtered$Description<-factor(GO.table.filtered$Description, levels=unique(GO.table.selection$Description))
-GO.table.filtered$comparison<-factor(GO.table.filtered$comparison, levels=c("activated_genes_table_A11_vs_A01_GO_table",
-                                                                            "GSRgenes.rice_GO_table",
-                                                                            "activated_genes_table_A13_vs_A01_GO_table",
-                                                                            "activated_genes_table_A12_vs_A01_GO_table"))
-
-
-ggplot(GO.table.filtered, aes(x=GeneRatio, y=Description, size=Count, color=p.adjust)) +
-  geom_point() +
-  geom_point(shape = 1, colour = "black") +
-  scale_color_gradientn(colours=c("yellow","blue","midnightblue"),values=c(0,0.5,1), name = "FDR") +
-  ylab("GO terms") + 
-  xlab("Gene Ratio") + 
-  publication_theme_GO() +
-  scale_size(name="Count", range=c(1,10), breaks=c(10,50,100,250)) +
-  facet_wrap(vars(comparison), nrow = 1, ncol=8, labeller = as_labeller(c("activated_genes_table_A11_vs_A01_GO_table"="Encased AMF",
-                                                                          "GSRgenes.rice_GO_table"="GSR genes",
-                                                                          "activated_genes_table_A12_vs_A01_GO_table"="Free AMF",
-                                                                          "activated_genes_table_A13_vs_A01_GO_table"="flg22"
-                                                                          )))
-ggsave("plots/GO/GO_plots/figure_2E.pdf", height=3.7, width=8.5)
+ggsave("plots/GO/GO_plots/figure_S4.pdf", height=7, width=10)
 
 # Figure S8B
 
